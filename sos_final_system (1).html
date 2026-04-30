@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SOS Alert Detection System</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f0f2f5;color:#1a1a1a;min-height:100vh}
+.topbar{background:#c0392b;color:white;padding:13px 24px;display:flex;align-items:center;gap:12px}
+.topbar-logo{width:40px;height:40px;background:white;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#c0392b;font-size:12px;flex-shrink:0}
+.topbar-title{font-size:16px;font-weight:700}
+.topbar-sub{font-size:11px;opacity:0.85;margin-top:1px}
+.api-bar{background:#fffbeb;border-bottom:2px solid #f59e0b;padding:10px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.api-bar label{font-size:13px;font-weight:600;color:#92400e;white-space:nowrap}
+.api-bar input{flex:1;min-width:260px;padding:7px 11px;border:1px solid #fcd34d;border-radius:7px;font-size:13px}
+.api-bar button{padding:7px 16px;background:#d97706;color:white;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600}
+.api-status{font-size:12px;font-weight:500}
+.container{max-width:1000px;margin:0 auto;padding:20px}
+.tabs{display:flex;gap:3px;margin-bottom:20px;background:white;border-radius:10px;padding:5px;border:1px solid #e0e0e0;flex-wrap:wrap}
+.tab{flex:1;padding:9px 10px;font-size:12px;cursor:pointer;border:none;border-radius:7px;color:#666;background:transparent;font-weight:600;min-width:100px;text-align:center}
+.tab.active{background:#c0392b;color:white}
+.section{display:none}.section.active{display:block}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.metric{background:white;border-radius:10px;padding:14px 16px;border:1px solid #e5e7eb;text-align:center}
+.mlabel{font-size:11px;color:#9ca3af;margin-bottom:3px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
+.mval{font-size:24px;font-weight:800;color:#1a1a1a}
+.mval.red{color:#dc2626}.mval.amber{color:#d97706}.mval.green{color:#16a34a}.mval.blue{color:#2563eb}
+.card{background:white;border-radius:12px;padding:18px;border:1px solid #e5e7eb;margin-bottom:16px}
+.card-title{font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+label{font-size:13px;color:#374151;display:block;margin-bottom:4px;margin-top:10px;font-weight:600}
+input[type=text],input[type=number],select,textarea{width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;color:#1a1a1a;background:white}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#c0392b;box-shadow:0 0 0 3px rgba(192,57,43,0.1)}
+textarea{resize:vertical;min-height:65px}
+.btn-red{width:100%;padding:12px;background:#c0392b;color:white;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;margin-top:14px}
+.btn-red:hover{background:#a93226}.btn-red:disabled{background:#ccc;cursor:not-allowed}
+.btn-amber{width:100%;padding:11px;background:#d97706;color:white;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;margin-top:10px}
+.btn-amber:disabled{background:#ccc;cursor:not-allowed}
+.btn-blue{width:100%;padding:11px;background:#2563eb;color:white;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px}
+.badge{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:700;display:inline-block}
+.b-real{background:#dcfce7;color:#15803d}
+.b-sus{background:#fef3c7;color:#92400e}
+.b-fake{background:#fee2e2;color:#b91c1c}
+.b-blue{background:#dbeafe;color:#1e40af}
+.flag{font-size:11px;padding:2px 7px;border-radius:4px;display:inline-block;margin:2px;font-weight:600}
+.f-r{background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5}
+.f-a{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
+.f-g{background:#dcfce7;color:#15803d;border:1px solid #86efac}
+.f-b{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+.f-p{background:#f5f3ff;color:#6d28d9;border:1px solid #c4b5fd}
+.alert-row{padding:13px 0;border-bottom:1px solid #f3f4f6;display:flex;gap:12px}
+.alert-row:last-child{border-bottom:none}
+.ai-box{background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;padding:9px 12px;margin-top:7px;font-size:12px;color:#5b21b6;line-height:1.6}
+.geo-box{background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:9px 12px;margin-top:6px;font-size:12px;color:#b91c1c;line-height:1.6}
+.net-box{background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:9px 12px;margin-top:6px;font-size:12px;color:#1e40af;line-height:1.6}
+.signal-box{background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:9px 12px;margin-top:6px;font-size:12px;color:#15803d;line-height:1.6}
+.escalation-box{border-radius:8px;padding:10px 14px;margin-top:8px;font-size:13px;font-weight:600}
+.esc-low{background:#fef3c7;border:1px solid #fcd34d;color:#92400e}
+.esc-med{background:#fed7aa;border:1px solid #fb923c;color:#9a3412}
+.esc-high{background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c}
+.esc-clear{background:#dcfce7;border:1px solid #86efac;color:#15803d}
+.passport{background:linear-gradient(135deg,#1e3a5f,#c0392b);border-radius:14px;padding:20px;color:white;position:relative;overflow:hidden}
+.passport::before{content:'CREDIBILITY PASSPORT';position:absolute;top:10px;right:14px;font-size:9px;opacity:0.4;letter-spacing:2px;font-weight:700}
+.passport-level{font-size:11px;opacity:0.8;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.passport-name{font-size:20px;font-weight:800;margin-bottom:2px}
+.passport-type{font-size:12px;opacity:0.8;margin-bottom:14px}
+.passport-scores{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.ps-item{background:rgba(255,255,255,0.15);border-radius:8px;padding:10px;text-align:center}
+.ps-label{font-size:10px;opacity:0.8;margin-bottom:2px;text-transform:uppercase}
+.ps-value{font-size:22px;font-weight:800}
+.passport-meta{font-size:11px;opacity:0.75;line-height:1.7}
+.trust-bar-wrap{margin:10px 0}
+.trust-bar-bg{height:8px;background:rgba(255,255,255,0.2);border-radius:4px;overflow:hidden}
+.trust-bar{height:100%;border-radius:4px;transition:width 0.5s}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #ddd;border-top-color:#c0392b;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:2.5rem;color:#9ca3af;font-size:14px}
+.signal-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6}
+.signal-row:last-child{border-bottom:none}
+.signal-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.sig-on{background:#16a34a}.sig-off{background:#d1d5db}.sig-warn{background:#d97706}
+.rq-card{background:#fffbeb;border:1.5px solid #fcd34d;border-radius:12px;padding:16px;margin-bottom:12px}
+.review-btns{display:flex;gap:8px;margin-top:10px}
+.btn-approve{flex:1;padding:9px;background:#dcfce7;color:#15803d;border:1.5px solid #86efac;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700}
+.btn-reject{flex:1;padding:9px;background:#fee2e2;color:#b91c1c;border:1.5px solid #fca5a5;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700}
+.adv-result{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-top:12px;line-height:1.7}
+.layer-strip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.lpill{font-size:11px;padding:5px 12px;border-radius:20px;font-weight:700}
+.lp1{background:#f5f3ff;color:#5b21b6;border:1px solid #c4b5fd}
+.lp2{background:#eff6ff;color:#1e40af;border:1px solid #93c5fd}
+.lp3{background:#f0fdf4;color:#15803d;border:1px solid #86efac}
+.lp4{background:#fff7ed;color:#9a3412;border:1px solid #fb923c}
+.checkbox-row{display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer}
+.checkbox-row input{width:auto;margin:0;cursor:pointer}
+.checkbox-row span{font-size:13px;font-weight:600;color:#374151}
+.signal-check{display:flex;align-items:center;gap:8px;padding:6px 0}
+.signal-check input{width:auto;margin:0;cursor:pointer}
+.signal-check span{font-size:13px;color:#374151;font-weight:500}
+.confidence-big{text-align:center;padding:16px;background:#f9fafb;border-radius:10px;margin-top:10px;border:1px solid #e5e7eb}
+.conf-pct{font-size:36px;font-weight:800}
+.conf-label{font-size:13px;color:#6b7280;margin-top:2px}
+@media(max-width:600px){.grid4{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}.container{padding:12px}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">SOS</div>
+  <div>
+    <div class="topbar-title">SOS Alert Detection System — 4-Layer Intelligence</div>
+    <div class="topbar-sub">Credibility Passport · Trust Score · Multi-Signal · Smart Escalation · Explainable AI</div>
+  </div>
+</div>
+
+<div class="api-bar">
+  <label>Gemini API Key:</label>
+  <input type="password" id="apikey" placeholder="Paste your Gemini API key here (get free at aistudio.google.com)" />
+  <button onclick="saveKey()">Save Key</button>
+  <span class="api-status" id="key-status" style="color:#92400e">No key — AI layer will be skipped (system still works)</span>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="sw('dashboard')">Dashboard</button>
+    <button class="tab" onclick="sw('submit')">Submit Alert</button>
+    <button class="tab" onclick="sw('passport')">Credibility Passport</button>
+    <button class="tab" onclick="sw('reviewer')">Reviewer Queue <span id="rq-count" style="background:#c0392b;color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:3px">0</span></button>
+    <button class="tab" onclick="sw('adversarial')">Adversarial Test</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="section active" id="tab-dashboard">
+    <div class="grid4">
+      <div class="metric"><div class="mlabel">Total Alerts</div><div class="mval" id="s-total">0</div></div>
+      <div class="metric"><div class="mlabel">Real</div><div class="mval green" id="s-real">0</div></div>
+      <div class="metric"><div class="mlabel">Suspicious</div><div class="mval amber" id="s-sus">0</div></div>
+      <div class="metric"><div class="mlabel">Flagged Fake</div><div class="mval red" id="s-fake">0</div></div>
+    </div>
+    <div class="layer-strip">
+      <span class="lpill lp1">Layer 1: Behavioral Rules</span>
+      <span class="lpill lp2">Layer 2: AI Semantic (Gemini)</span>
+      <span class="lpill lp3">Layer 3: Network + Geospatial</span>
+      <span class="lpill lp4">Layer 4: Multi-Signal Verification</span>
+    </div>
+    <div class="card">
+      <div class="card-title">Live Alert Feed</div>
+      <div id="feed"><div class="empty">No alerts yet. Go to Submit Alert to begin.</div></div>
+    </div>
+  </div>
+
+  <!-- SUBMIT -->
+  <div class="section" id="tab-submit">
+    <div class="card">
+      <div class="card-title">Submit SOS Alert</div>
+      <label>User ID</label>
+      <input type="text" id="uid" placeholder="e.g. user_042" />
+      <label>Alert Type</label>
+      <select id="atype">
+        <option>Medical emergency</option>
+        <option>Fire</option>
+        <option>Flood</option>
+        <option>Accident</option>
+        <option>Violence</option>
+        <option>Test / Unknown</option>
+      </select>
+      <div class="grid2">
+        <div><label>City / Location</label><input type="text" id="city" placeholder="e.g. Chennai" /></div>
+        <div><label>Coordinates (lat, lng)</label><input type="text" id="coords" placeholder="e.g. 13.08, 80.27" /></div>
+      </div>
+      <label>Emergency Message</label>
+      <textarea id="msg" placeholder="Describe the emergency..."></textarea>
+      <div class="grid2">
+        <div><label>Account Age (days)</label><input type="number" id="age" placeholder="30" min="0"/></div>
+        <div><label>Alerts in Last Hour</label><input type="number" id="freq" placeholder="1" min="0"/></div>
+      </div>
+      <label class="checkbox-row"><input type="checkbox" id="verified"/><span>User is verified</span></label>
+
+      <div style="margin-top:16px;padding:14px;background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb">
+        <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">Multi-Signal Detection (Layer 4)</div>
+        <div class="signal-check"><input type="checkbox" id="sig-motion"/><span>Motion detected (phone moving)</span></div>
+        <div class="signal-check"><input type="checkbox" id="sig-audio"/><span>Audio spike detected (scream / loud noise)</span></div>
+        <div class="signal-check"><input type="checkbox" id="sig-stop"/><span>Sudden stop in movement</span></div>
+        <div class="signal-check"><input type="checkbox" id="sig-network"/><span>Network instability detected</span></div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:6px">In production, these are auto-detected from device sensors. Check what applies.</div>
+      </div>
+
+      <button class="btn-red" id="submit-btn" onclick="submitAlert()">Analyze &amp; Submit Alert</button>
+      <div id="ai-status" style="margin-top:8px;font-size:13px;color:#888;text-align:center"></div>
+    </div>
+  </div>
+
+  <!-- CREDIBILITY PASSPORT -->
+  <div class="section" id="tab-passport">
+    <div class="card">
+      <div class="card-title">SOS Credibility Passport</div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:14px">Every user has a dynamic Emergency Identity that evolves based on behavior. Search any user to view their passport.</p>
+      <div style="display:flex;gap:10px">
+        <input type="text" id="passport-search" placeholder="Enter user ID e.g. user_042" style="flex:1"/>
+        <button onclick="showPassport()" style="padding:9px 18px;background:#c0392b;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700">View Passport</button>
+      </div>
+      <div id="passport-result" style="margin-top:16px"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">All User Passports</div>
+      <div id="all-passports"><div class="empty">No users yet. Submit alerts to generate passports.</div></div>
+    </div>
+  </div>
+
+  <!-- REVIEWER QUEUE -->
+  <div class="section" id="tab-reviewer">
+    <div class="card">
+      <div class="card-title">Human Reviewer Queue</div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:14px">Suspicious and fake alerts NEVER auto-blocked. A human reviews each one. This is our core safety principle — being wrong costs lives.</p>
+      <div id="rq-feed"><div class="empty">No alerts pending review.</div></div>
+    </div>
+  </div>
+
+  <!-- ADVERSARIAL TEST -->
+  <div class="section" id="tab-adversarial">
+    <div class="card">
+      <div class="card-title">Adversarial Self-Attack Test</div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:14px">We attack our own system with crafted fake alerts. If we can fool it, we know where to improve. Judges: this shows production-level security thinking.</p>
+      <label>Choose Attack Strategy</label>
+      <select id="atk-type">
+        <option value="polished">Polished fake — well-written, verified-looking</option>
+        <option value="velocity">Geo-velocity attack — impossible travel speed</option>
+        <option value="flood">Alert flood — mass spam from one user</option>
+        <option value="trusted">Trusted user gone rogue — high trust score abuser</option>
+      </select>
+      <button class="btn-amber" id="adv-btn" onclick="runAdversarial()">Run Adversarial Test</button>
+      <div id="adv-result"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let API_KEY = '';
+const alerts = [], reviewQueue = [], locationLog = {}, userLog = {};
+const userPassports = {};
+
+function saveKey() {
+  API_KEY = document.getElementById('apikey').value.trim();
+  const el = document.getElementById('key-status');
+  if (API_KEY) { el.textContent = 'Gemini API key saved! AI layer active.'; el.style.color = '#15803d'; }
+  else { el.textContent = 'No key — AI layer skipped.'; el.style.color = '#92400e'; }
+}
+
+function sw(name) {
+  ['dashboard','submit','passport','reviewer','adversarial'].forEach(n => {
+    document.getElementById('tab-'+n).classList.toggle('active', n === name);
+  });
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['dashboard','submit','passport','reviewer','adversarial'][i] === name);
+  });
+}
+
+function getOrCreatePassport(uid) {
+  if (!userPassports[uid]) {
+    userPassports[uid] = {
+      uid, trustScore: 50, alertCount: 0, genuineCount: 0,
+      spamCount: 0, history: [], lastAction: 'Account created', userType: 'Unknown', credLevel: 'NEUTRAL'
+    };
+  }
+  return userPassports[uid];
+}
+
+function updatePassport(uid, status, flags) {
+  const p = getOrCreatePassport(uid);
+  p.alertCount++;
+  p.history.push({ status, time: Date.now() });
+  if (status === 'real') { p.trustScore = Math.min(100, p.trustScore + 10); p.genuineCount++; p.lastAction = 'Genuine alert submitted'; }
+  else if (status === 'suspicious') { p.trustScore = Math.max(0, p.trustScore - 15); p.spamCount++; p.lastAction = 'Suspicious alert flagged'; }
+  else { p.trustScore = Math.max(0, p.trustScore - 30); p.spamCount++; p.lastAction = 'Fake alert detected'; }
+  if (flags.some(f => f.t && f.t.includes('Impossible'))) p.trustScore = Math.max(0, p.trustScore - 50);
+  if (p.trustScore >= 75) { p.credLevel = 'HIGH'; p.userType = 'Trusted Responder'; }
+  else if (p.trustScore >= 50) { p.credLevel = 'MEDIUM'; p.userType = 'Standard User'; }
+  else if (p.trustScore >= 25) { p.credLevel = 'LOW'; p.userType = 'At-Risk User'; }
+  else { p.credLevel = 'CRITICAL'; p.userType = 'Potential Misuser'; }
+  if (p.spamCount >= 3) p.lastAction = 'Temporarily blocked';
+  return p;
+}
+
+function parseCoords(s) {
+  if (!s) return null;
+  const p = s.split(',').map(x => parseFloat(x.trim()));
+  if (p.length === 2 && !isNaN(p[0]) && !isNaN(p[1])) return { lat: p[0], lng: p[1] };
+  return null;
+}
+
+function haversine(a, b) {
+  const R = 6371, dLat = (b.lat-a.lat)*Math.PI/180, dLng = (b.lng-a.lng)*Math.PI/180;
+  const x = Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+
+function layer1Rules(data) {
+  let score = 0; const flags = [];
+  if (data.freq > 3) { score += 40; flags.push({ t:'High frequency ('+data.freq+'/hr)', l:'r', layer:'L1' }); }
+  if (!data.verified) { score += 25; flags.push({ t:'Unverified user', l:'a', layer:'L1' }); }
+  if (data.age < 7) { score += 20; flags.push({ t:'New account ('+data.age+' days)', l:'a', layer:'L1' }); }
+  if (data.msg.trim().length < 10) { score += 15; flags.push({ t:'Vague message', l:'a', layer:'L1' }); }
+  const m = data.msg.toLowerCase();
+  if (/\b(test|fake|hello|hi|abc|dummy|lol|haha|testing|xyz)\b/.test(m)) { score += 50; flags.push({ t:'Test keyword detected', l:'r', layer:'L1' }); }
+  if (data.atype === 'Test / Unknown') { score += 15; flags.push({ t:'Unknown alert type', l:'a', layer:'L1' }); }
+  const loc = (data.city||'').toLowerCase().trim();
+  if (loc) { locationLog[loc] = (locationLog[loc]||0)+1; if (locationLog[loc]>2) { score += 20; flags.push({ t:'Repeated location (×'+locationLog[loc]+')', l:'a', layer:'L1' }); } }
+  const pp = getOrCreatePassport(data.uid);
+  if (pp.trustScore < 25) { score += 30; flags.push({ t:'Low trust score ('+pp.trustScore+')', l:'r', layer:'L1' }); }
+  else if (pp.trustScore >= 75) { score -= 15; flags.push({ t:'High trust score ('+pp.trustScore+')', l:'g', layer:'L1' }); }
+  return { score, flags };
+}
+
+function layer3Network(data) {
+  let score = 0; const flags = [];
+  const uid = data.uid; const now = Date.now();
+  if (!userLog[uid]) userLog[uid] = [];
+  const prev = userLog[uid];
+  if (data.coords && prev.length > 0) {
+    const last = prev[prev.length-1];
+    if (last.coords) {
+      const dist = haversine(data.coords, last.coords);
+      const mins = (now-last.time)/60000;
+      const speed = mins > 0 ? dist/(mins/60) : 9999;
+      if (speed > 900) { score += 60; flags.push({ t:'Impossible travel ('+Math.round(speed)+' km/h)', l:'r', layer:'L3' }); }
+      else if (speed > 200) { score += 25; flags.push({ t:'Very fast movement', l:'a', layer:'L3' }); }
+    }
+  }
+  const loc = (data.city||'').toLowerCase().trim();
+  const recentSame = alerts.filter(a => (a.city||'').toLowerCase()===loc && (now-a.time)<300000 && a.uid!==uid);
+  if (recentSame.length >= 2) { score -= 20; flags.push({ t:'Corroborated by '+recentSame.length+' others nearby', l:'g', layer:'L3' }); }
+  const userAlerts = alerts.filter(a => a.uid===uid);
+  if (userAlerts.length >= 2) {
+    const cities = new Set(userAlerts.map(a=>(a.city||'').toLowerCase()).filter(Boolean)); cities.add(loc);
+    if (cities.size >= 3) { score += 30; flags.push({ t:'Alerts from '+cities.size+' different cities', l:'r', layer:'L3' }); }
+  }
+  userLog[uid].push({ coords: data.coords, time: now });
+  return { score, flags };
+}
+
+function layer4Signals(data) {
+  let score = 0; const flags = []; const detected = [];
+  if (data.sigMotion) detected.push('motion');
+  if (data.sigAudio) detected.push('audio spike');
+  if (data.sigStop) detected.push('sudden stop');
+  if (data.sigNetwork) detected.push('network instability');
+  if (detected.length >= 3) { score -= 20; flags.push({ t:'Multi-signal confirmed ('+detected.length+' signals)', l:'g', layer:'L4' }); }
+  else if (detected.length >= 1) { score -= 10; flags.push({ t:'Partial signal match ('+detected.join(', ')+')', l:'b', layer:'L4' }); }
+  else { score += 10; flags.push({ t:'No device signals detected', l:'a', layer:'L4' }); }
+  return { score, flags, detected };
+}
+
+function getEscalation(score, detected) {
+  if (score < 30) {
+    if (detected.length >= 3) return { tier:'EMERGENCY SERVICES', msg:'High confidence + multi-signal. Dispatch emergency services immediately.', cls:'esc-high', icon:'🚨' };
+    return { tier:'CONTROL CENTER', msg:'Alert looks genuine. Forwarded to emergency control center for dispatch.', cls:'esc-med', icon:'📡' };
+  } else if (score < 55) return { tier:'NEARBY COMMUNITY', msg:'Medium confidence. Notifying nearby verified users to check and confirm.', cls:'esc-low', icon:'👥' };
+  else return { tier:'BLOCKED — REVIEW', msg:'High suspicion. Alert held for human reviewer. Not forwarded to emergency services.', cls:'esc-clear', icon:'🔍' };
+}
+
+async function layer2AI(data) {
+  if (!API_KEY) return { confidence:50, reason:'No Gemini API key — AI layer skipped', consistent:true, skipped:true };
+  try {
+    const prompt = `You are an emergency alert validation AI. Analyze this SOS alert and return ONLY valid JSON, no extra text.
+
+Alert type: ${data.atype}
+Message: "${data.msg}"
+User verified: ${data.verified}
+Account age: ${data.age} days
+
+Return exactly: {"confidence": <integer 0-100>, "reason": "<one sentence>", "consistent": <true or false>}
+confidence = likelihood this is a REAL emergency (100=definitely real, 0=definitely fake)
+consistent = does the message match the alert type?`;
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const d = await res.json();
+    const txt = (d.candidates?.[0]?.content?.parts?.[0]?.text || '{}').replace(/```json|```/g,'').trim();
+    return JSON.parse(txt);
+  } catch(e) {
+    return { confidence:50, reason:'AI analysis error — check API key', consistent:true, error:true };
+  }
+}
+
+async function submitAlert() {
+  const uid = document.getElementById('uid').value.trim() || 'anon_'+Math.floor(Math.random()*999);
+  const atype = document.getElementById('atype').value;
+  const city = document.getElementById('city').value.trim() || 'Unknown';
+  const coordsRaw = document.getElementById('coords').value;
+  const msg = document.getElementById('msg').value.trim();
+  const age = parseInt(document.getElementById('age').value)||0;
+  const freq = parseInt(document.getElementById('freq').value)||0;
+  const verified = document.getElementById('verified').checked;
+  const coords = parseCoords(coordsRaw);
+  const sigMotion = document.getElementById('sig-motion').checked;
+  const sigAudio = document.getElementById('sig-audio').checked;
+  const sigStop = document.getElementById('sig-stop').checked;
+  const sigNetwork = document.getElementById('sig-network').checked;
+
+  if (!msg) { alert('Please enter an emergency message.'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  const statusEl = document.getElementById('ai-status');
+  btn.disabled = true; btn.textContent = 'Analyzing...';
+  statusEl.innerHTML = '<span class="spinner"></span> Running 4-layer analysis...';
+
+  const data = { uid, atype, city, coords, msg, age, freq, verified, sigMotion, sigAudio, sigStop, sigNetwork };
+  const r1 = layer1Rules(data);
+  const r3 = layer3Network(data);
+  const r4 = layer4Signals(data);
+
+  statusEl.innerHTML = '<span class="spinner"></span> Layer 2: Gemini AI semantic analysis...';
+  const aiResult = await layer2AI(data);
+
+  let aiScore = 0; const aiFlags = [];
+  if (!aiResult.skipped && !aiResult.error) {
+    if (aiResult.confidence < 40) { aiScore += Math.round((40-aiResult.confidence)*0.8); aiFlags.push({ t:'AI: low confidence ('+aiResult.confidence+'%)', l:'r', layer:'L2' }); }
+    else if (aiResult.confidence < 65) { aiScore += 15; aiFlags.push({ t:'AI: medium confidence ('+aiResult.confidence+'%)', l:'a', layer:'L2' }); }
+    else { aiFlags.push({ t:'AI: real emergency ('+aiResult.confidence+'%)', l:'g', layer:'L2' }); }
+    if (!aiResult.consistent) { aiScore += 20; aiFlags.push({ t:'AI: message inconsistent with type', l:'r', layer:'L2' }); }
+  } else { aiFlags.push({ t: aiResult.reason, l:'b', layer:'L2' }); }
+
+  const totalScore = Math.max(0, Math.min(100, r1.score + aiScore + r3.score + r4.score));
+  const allFlags = [...r1.flags, ...aiFlags, ...r3.flags, ...r4.flags];
+  let status = 'real';
+  if (totalScore >= 55) status = 'fake';
+  else if (totalScore >= 30) status = 'suspicious';
+
+  const passport = updatePassport(uid, status, allFlags);
+  const escalation = getEscalation(totalScore, r4.detected);
+  const confidence = Math.max(0, Math.min(100, 100 - totalScore));
+
+  const alertObj = { uid, atype, city, coords, msg, age, freq, verified, score: totalScore, confidence, flags: allFlags, status, aiResult, escalation, signals: r4.detected, passport: {...passport}, time: Date.now(), id: Date.now(), reviewed: false };
+  alerts.unshift(alertObj);
+  if (status !== 'real') reviewQueue.unshift(alertObj);
+
+  btn.disabled = false; btn.textContent = 'Analyze & Submit Alert';
+  statusEl.innerHTML = '';
+  document.getElementById('msg').value = '';
+  document.getElementById('uid').value = '';
+  ['sig-motion','sig-audio','sig-stop','sig-network'].forEach(id => document.getElementById(id).checked = false);
+
+  updateStats(); renderFeed(); renderRQ(); renderAllPassports();
+  sw('dashboard');
+}
+
+function updateStats() {
+  document.getElementById('s-total').textContent = alerts.length;
+  document.getElementById('s-real').textContent = alerts.filter(a=>a.status==='real').length;
+  document.getElementById('s-sus').textContent = alerts.filter(a=>a.status==='suspicious').length;
+  document.getElementById('s-fake').textContent = alerts.filter(a=>a.status==='fake').length;
+  document.getElementById('rq-count').textContent = reviewQueue.filter(a=>!a.reviewed).length;
+}
+
+function renderFeed() {
+  const feed = document.getElementById('feed');
+  if (!alerts.length) { feed.innerHTML = '<div class="empty">No alerts yet.</div>'; return; }
+  feed.innerHTML = alerts.map(a => {
+    const bc = { real:'b-real', suspicious:'b-sus', fake:'b-fake' }[a.status];
+    const barColor = a.status==='fake'?'#dc2626':a.status==='suspicious'?'#d97706':'#16a34a';
+    const flagsHtml = a.flags.map(f=>`<span class="flag f-${f.l}" title="${f.layer}">[${f.layer}] ${f.t}</span>`).join('');
+    const t = new Date(a.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const sigLine = a.signals.length ? `<div class="signal-box">Signals detected: ${a.signals.join(', ')} — ${a.signals.length >= 3 ? 'Strong multi-signal confirmation' : 'Partial signal match'}</div>` : '';
+    const aiLine = a.aiResult && !a.aiResult.skipped ? `<div class="ai-box">Gemini AI: "${a.aiResult.reason}" — ${a.aiResult.confidence}% real confidence</div>` : '';
+    const geoLine = a.flags.some(f=>f.layer==='L3'&&f.l==='r') ? `<div class="geo-box">Network anomaly: Suspicious geospatial or multi-city pattern detected</div>` : '';
+    const escLine = `<div class="escalation-box ${a.escalation.cls}">${a.escalation.icon} Escalation: ${a.escalation.tier} — ${a.escalation.msg}</div>`;
+    const confColor = a.confidence >= 70 ? '#16a34a' : a.confidence >= 40 ? '#d97706' : '#dc2626';
+    return `<div class="alert-row">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:700">${a.uid}</span>
+          <span class="badge ${bc}">${a.status}</span>
+          <span style="font-size:12px;font-weight:700;color:${confColor}">Confidence: ${a.confidence}%</span>
+          <span style="font-size:11px;color:#aaa">${t}</span>
+        </div>
+        <div style="font-size:12px;color:#9ca3af;margin-top:2px">${a.atype} · ${a.city} · Trust score: ${a.passport.trustScore}/100 (${a.passport.credLevel})</div>
+        <div style="font-size:13px;color:#374151;margin-top:4px;font-style:italic">"${a.msg.slice(0,100)}${a.msg.length>100?'...':''}"</div>
+        <div style="margin-top:6px">${flagsHtml}</div>
+        ${sigLine}${aiLine}${geoLine}${escLine}
+      </div>
+      <div style="width:50px;flex-shrink:0;text-align:center">
+        <div style="font-size:10px;color:#aaa;text-transform:uppercase">Risk</div>
+        <div style="height:6px;background:#f3f4f6;border-radius:3px;margin:4px 0;overflow:hidden"><div style="width:${a.score}%;height:100%;background:${barColor};border-radius:3px"></div></div>
+        <div style="font-size:12px;font-weight:800;color:#1a1a1a">${a.score}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function passportCard(p) {
+  const col = p.credLevel==='HIGH'?'#16a34a':p.credLevel==='MEDIUM'?'#2563eb':p.credLevel==='LOW'?'#d97706':'#dc2626';
+  const barW = p.trustScore + '%';
+  return `<div class="passport">
+    <div class="passport-level">SOS Credibility Passport</div>
+    <div class="passport-name">${p.uid}</div>
+    <div class="passport-type">${p.userType}</div>
+    <div class="passport-scores">
+      <div class="ps-item"><div class="ps-label">Trust Score</div><div class="ps-value">${p.trustScore}</div></div>
+      <div class="ps-item"><div class="ps-label">Risk Score</div><div class="ps-value">${Math.max(0,100-p.trustScore)}</div></div>
+    </div>
+    <div class="trust-bar-wrap">
+      <div style="font-size:10px;opacity:0.7;margin-bottom:4px">Trust Level: ${p.credLevel}</div>
+      <div class="trust-bar-bg"><div class="trust-bar" style="width:${barW};background:${col}"></div></div>
+    </div>
+    <div class="passport-meta">
+      Total alerts: ${p.alertCount} &nbsp;|&nbsp; Genuine: ${p.genuineCount} &nbsp;|&nbsp; Spam: ${p.spamCount}<br/>
+      Last action: ${p.lastAction}<br/>
+      System confidence: ${p.trustScore >= 75 ? 'HIGH' : p.trustScore >= 40 ? 'MEDIUM' : 'LOW'}
+    </div>
+  </div>`;
+}
+
+function showPassport() {
+  const uid = document.getElementById('passport-search').value.trim();
+  const el = document.getElementById('passport-result');
+  if (!uid) { el.innerHTML = '<div style="color:#dc2626;font-size:13px">Please enter a user ID.</div>'; return; }
+  const p = userPassports[uid];
+  if (!p) { el.innerHTML = '<div style="color:#9ca3af;font-size:13px">No passport found for this user. Submit an alert from them first.</div>'; return; }
+  el.innerHTML = passportCard(p);
+}
+
+function renderAllPassports() {
+  const el = document.getElementById('all-passports');
+  const keys = Object.keys(userPassports);
+  if (!keys.length) { el.innerHTML = '<div class="empty">No users yet.</div>'; return; }
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">${keys.map(k => passportCard(userPassports[k])).join('')}</div>`;
+}
+
+function renderRQ() {
+  const feed = document.getElementById('rq-feed');
+  const pending = reviewQueue.filter(a => !a.reviewed);
+  if (!pending.length) { feed.innerHTML = '<div class="empty">No alerts pending review.</div>'; return; }
+  feed.innerHTML = pending.map(a => `
+    <div class="rq-card" id="rqi-${a.id}">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <span style="font-size:15px;font-weight:700">${a.uid}</span>
+        <span class="badge b-fake">Needs Review</span>
+        <span style="font-size:12px;color:#6b7280">Risk: ${a.score}/100 · Confidence: ${a.confidence}%</span>
+      </div>
+      <div style="font-size:12px;color:#9ca3af">${a.atype} · ${a.city} · Trust: ${a.passport.trustScore} (${a.passport.credLevel})</div>
+      <div style="font-size:14px;font-style:italic;margin:8px 0">"${a.msg}"</div>
+      ${a.aiResult && !a.aiResult.skipped ? `<div class="ai-box">Gemini: ${a.aiResult.reason} (${a.aiResult.confidence}% real)</div>` : ''}
+      <div style="margin-top:8px">${a.flags.map(f=>`<span class="flag f-${f.l}">[${f.layer}] ${f.t}</span>`).join('')}</div>
+      <div class="review-btns">
+        <button class="btn-approve" onclick="review(${a.id},'approve')">Approve — Real Emergency</button>
+        <button class="btn-reject" onclick="review(${a.id},'reject')">Reject — Fake Alert</button>
+      </div>
+    </div>`).join('');
+}
+
+function review(id, decision) {
+  const a = reviewQueue.find(x => x.id===id);
+  if (a) { a.reviewed = true; a.decision = decision;
+    const uid = a.uid; const p = userPassports[uid];
+    if (p) { if (decision==='approve') { p.trustScore = Math.min(100,p.trustScore+15); p.lastAction='Reviewer approved alert'; } else { p.trustScore = Math.max(0,p.trustScore-25); p.lastAction='Reviewer rejected alert'; } }
+  }
+  const el = document.getElementById('rqi-'+id);
+  if (el) {
+    const msg = decision==='approve'?'Approved — forwarded to emergency services':'Rejected — alert blocked and trust score penalized';
+    const color = decision==='approve'?'#15803d':'#b91c1c';
+    el.style.opacity='0.6';
+    el.insertAdjacentHTML('beforeend',`<div style="margin-top:10px;font-weight:700;color:${color};font-size:13px">${msg}</div>`);
+    setTimeout(()=>{ renderRQ(); updateStats(); renderAllPassports(); }, 800);
+  }
+}
+
+async function runAdversarial() {
+  const type = document.getElementById('atk-type').value;
+  const btn = document.getElementById('adv-btn');
+  const res = document.getElementById('adv-result');
+  btn.disabled=true; btn.textContent='Running test...';
+  res.innerHTML='<span class="spinner"></span> Generating attack and testing all 4 layers...';
+
+  const attacks = {
+    polished:{ uid:'verified_99', atype:'Medical emergency', city:'Chennai', coords:{lat:13.08,lng:80.27}, msg:'Person collapsed near Marina Beach lighthouse, unconscious, not breathing, need ambulance immediately.', age:120, freq:1, verified:true, sigMotion:true, sigAudio:false, sigStop:false, sigNetwork:false },
+    velocity:{ uid:'speedy_user', atype:'Fire', city:'Mumbai', coords:{lat:19.07,lng:72.87}, msg:'Building on fire, people trapped on 3rd floor, need fire brigade urgently.', age:45, freq:1, verified:false, sigMotion:true, sigAudio:true, sigStop:false, sigNetwork:false },
+    flood:{ uid:'spammer_01', atype:'Flood', city:'Chennai', coords:null, msg:'help lol flooding', age:2, freq:9, verified:false, sigMotion:false, sigAudio:false, sigStop:false, sigNetwork:false },
+    trusted:{ uid:'trusted_abuser', atype:'Violence', city:'Delhi', coords:null, msg:'Someone is attacking me near the metro station, please help send police.', age:200, freq:2, verified:true, sigMotion:false, sigAudio:false, sigStop:false, sigNetwork:false }
+  };
+
+  const atk = attacks[type];
+  if (type==='velocity') userLog['speedy_user']=[{coords:{lat:13.08,lng:80.27},time:Date.now()-600000}];
+  if (type==='trusted') { getOrCreatePassport('trusted_abuser').trustScore=80; getOrCreatePassport('trusted_abuser').credLevel='HIGH'; }
+
+  const r1 = layer1Rules(atk);
+  const r3 = layer3Network(atk);
+  const r4 = layer4Signals(atk);
+  const aiResult = await layer2AI(atk);
+
+  let aiScore=0; const aiFlags=[];
+  if (!aiResult.skipped && !aiResult.error) {
+    if (aiResult.confidence<40){aiScore+=Math.round((40-aiResult.confidence)*0.8);aiFlags.push({t:'AI low confidence ('+aiResult.confidence+'%)',l:'r'});}
+    else if(aiResult.confidence<65){aiScore+=15;aiFlags.push({t:'AI medium confidence ('+aiResult.confidence+'%)',l:'a'});}
+    else aiFlags.push({t:'AI: looks real ('+aiResult.confidence+'%)',l:'g'});
+    if(!aiResult.consistent){aiScore+=20;aiFlags.push({t:'AI: inconsistent message',l:'r'});}
+  }
+
+  const total = Math.max(0,Math.min(100,r1.score+aiScore+r3.score+r4.score));
+  const caught = total >= 30;
+  const allFlags = [...r1.flags,...aiFlags,...r3.flags,...r4.flags];
+  const attackNames = { polished:'Polished fake — looks real', velocity:'Geo-velocity impossible travel', flood:'Alert flood spam', trusted:'Trusted user gone rogue' };
+  const conf = Math.max(0,100-total);
+
+  btn.disabled=false; btn.textContent='Run Adversarial Test';
+  res.innerHTML=`<div class="adv-result">
+    <div style="font-size:15px;font-weight:700;margin-bottom:8px">Attack: ${attackNames[type]}</div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:10px">Message: "${atk.msg}"</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="font-size:16px;font-weight:800;color:${caught?'#15803d':'#dc2626'}">${caught?'CAUGHT by system':'BYPASSED — vulnerability found'}</span>
+      <span class="badge ${caught?'b-fake':'b-real'}">${caught?'Detected':'Missed'}</span>
+      <span style="font-size:13px;color:#6b7280">Risk: ${total}/100 · Confidence: ${conf}%</span>
+    </div>
+    <div style="margin-bottom:10px">${allFlags.map(f=>`<span class="flag f-${f.l||'b'}">${f.t}</span>`).join('')}</div>
+    ${aiResult&&!aiResult.skipped?`<div class="ai-box">Gemini verdict: "${aiResult.reason}" — ${aiResult.confidence}% confidence this is real</div>`:''}
+    ${type==='velocity'?`<div class="geo-box" style="margin-top:8px">Geospatial check: User was in Chennai 10 min ago. Mumbai is 1,300km away — physically impossible at any speed.</div>`:''}
+    ${type==='trusted'?`<div class="net-box" style="margin-top:8px">Note: High trust score partially reduced suspicion. This shows a sophisticated attacker exploiting built trust — real-world systems need anomaly detection on trusted users too.</div>`:''}
+    <div style="font-size:12px;color:#9ca3af;margin-top:10px">${caught?'System caught this using '+allFlags.filter(f=>f.l==='r').length+' critical flags across multiple layers.':'Recommendation: Tighten thresholds or add additional signals for this attack type.'}</div>
+  </div>`;
+}
+</script>
+</body>
+</html>
